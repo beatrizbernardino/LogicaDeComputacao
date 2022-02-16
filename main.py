@@ -6,12 +6,11 @@ exp = sys.argv[1]
 result = 0
 subs = []
 if exp[0] == ' ' and (exp[1] == "+" or exp[1] == "-"):
-    print('erro')
-    sys.exit()
+
+    sys.stderr, 'invalido'
 
 exp = exp.replace(" ", '')
 
-print(exp)
 if '+' in exp:
     if '-' in exp:
 
