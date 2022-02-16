@@ -5,9 +5,10 @@ exp = sys.argv[1]
 
 result = 0
 subs = []
-if exp[0] == ' ' and (exp[1] == "+" or exp[1] == "-"):
 
-    sys.stderr, 'invalido'
+if exp[0] == ' ' and (exp[1] == "+" or exp[1] == "-") or ('+' not in exp and '-' not in exp):
+
+    sys.stderr.write('invalido')
 
 exp = exp.replace(" ", '')
 
@@ -15,7 +16,7 @@ if '+' in exp:
     if '-' in exp:
 
         list = exp.split('+')
-        print(list)
+
         for i in list:
             if '-' not in i:
                 result += int(i)
@@ -32,7 +33,7 @@ if '+' in exp:
             result += int(i)
 
 if '-' in exp:
-    print(subs)
+
     if len(subs) == 0:
         list = exp.split('-')
 
