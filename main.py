@@ -17,7 +17,6 @@ class Tokenizer:
         self.origin = origin  # '1+2+3'
         self.position = 0
         self.actual = None
-        self.origin = self.origin.replace(" ", '')
 
     def selectNext(self):
 
@@ -88,8 +87,17 @@ class Parser:
             raise ValueError('Invalid Code')
 
     def run(code):
+        if code[0] == ' ' and (code[1] == "+" or code[1] == "-"):
+
+            raise ValueError('Invalid Code')
+
+        if code[0] == ' ' and (code[1] == "+" or code[1] == "-") or ('+' not in code and '-' not in code):
+
+            raise ValueError('Invalid Code')
+
+        code = code.replace(" ", '')
         Parser.tokens = Tokenizer(code)
         return Parser.parseExpression()
 
 
-Parser.run(' 244 -4- 1 ')
+print(Parser.run('1+1'))
