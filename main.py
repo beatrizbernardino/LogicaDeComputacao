@@ -100,4 +100,4 @@ class Parser:
         return Parser.parseExpression()
 
 
-print(Parser.run('1+1'))
+print(Parser.run(sys.argv[1]))
