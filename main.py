@@ -31,6 +31,18 @@ class Tokenizer:
             self.actual = Token('+', 'PLUS')
             return self.actual
 
+        elif self.origin[self.position] == '*':
+
+            self.position += 1
+            self.actual = Token('*', 'MULT')
+            return self.actual
+
+        elif self.origin[self.position] == '/':
+
+            self.position += 1
+            self.actual = Token('/', 'DIV')
+            return self.actual
+
         elif self.origin[self.position] == '-':
 
             self.position += 1
@@ -54,49 +66,90 @@ class Tokenizer:
             raise ValueError('Invalid Token')
 
 
+class PrePro:
+    code = None
+
+    def filter():
+        while '/*' in PrePro.code and '*/' in PrePro.code:
+
+            index_start = PrePro.code.index('/*')
+            index_end = PrePro.code.index('*/')
+            PrePro.code = PrePro.code[:index_start] + PrePro.code[index_end+2:]
+
+        if '/*' in PrePro.code and '*/' not in PrePro.code or '/*' not in PrePro.code and '*/' in PrePro.code:
+            raise ValueError('Invalid format')
+
+        return PrePro.code
+
+
 class Parser:
 
     tokens = None
 
     def parseExpression():
 
-        token = Parser.tokens.selectNext()
+        resultado = Parser.parseTerm()
+
+        while Parser.tokens.actual.type == 'PLUS' or Parser.tokens.actual.type == 'MINUS':
+
+            if Parser.tokens.actual.type == 'PLUS':
+                Parser.tokens.selectNext()
+
+                resultado += Parser.parseTerm()
+
+            elif Parser.tokens.actual.type == 'MINUS':
+                Parser.tokens.selectNext()
+                resultado -= Parser.parseTerm()
+
+            else:
+                raise ValueError('Invalid Token')
+
+        return resultado
+
+    def parseTerm():
         resultado = 0
 
-        if token.type == 'INT':
-            resultado = token.value
-            token = Parser.tokens.selectNext()
+        if Parser.tokens.actual.type == 'INT':
+            resultado = Parser.tokens.actual.value
+            Parser.tokens.selectNext()
 
-            while token.type == 'PLUS' or token.type == 'MINUS':
-                if token.type == 'PLUS':
-                    token = Parser.tokens.selectNext()
+            while Parser.tokens.actual.type == 'MULT' or Parser.tokens.actual.type == 'DIV':
+                if Parser.tokens.actual.type == 'MULT':
+                    Parser.tokens.selectNext()
 
-                    if token.type == 'INT':
-                        resultado += token.value
+                    if Parser.tokens.actual.type == 'INT':
+                        resultado *= Parser.tokens.actual.value
                     else:
                         raise ValueError('Invalid Token')
-                elif token.type == 'MINUS':
-                    token = Parser.tokens.selectNext()
-                    if token.type == 'INT':
-                        resultado -= token.value
+                elif Parser.tokens.actual.type == 'DIV':
+                    Parser.tokens.selectNext()
+
+                    if Parser.tokens.actual.type == 'INT':
+                        resultado //= Parser.tokens.actual.value
                     else:
                         raise ValueError('Invalid Token')
-                token = Parser.tokens.selectNext()
+                Parser.tokens.selectNext()
             return resultado
         else:
             raise ValueError('Invalid Code')
 
     def run(code):
-        if code[0] == ' ' and (code[1] == "+" or code[1] == "-"):
+        if code[0] == ' ' and (code[1] == "+" or code[1] == "-" or code[1] == "*" or code[1] == "/"):
 
             raise ValueError('Invalid Code')
 
-        if code[0] == ' ' and (code[1] == "+" or code[1] == "-") or ('+' not in code and '-' not in code):
+        if code[0] == ' ' and (code[1] == "+" or code[1] == "-" or code[1] == "*" or code[1] == "/") or ('+' not in code and '-' not in code and '*' not in code and '/' not in code):
 
             raise ValueError('Invalid Code')
 
         code = code.replace(" ", '')
-        Parser.tokens = Tokenizer(code)
+
+        PrePro.code = code
+
+        PrePro.filter()
+
+        Parser.tokens = Tokenizer(PrePro.code)
+        Parser.tokens.selectNext()
         return Parser.parseExpression()
 
 
