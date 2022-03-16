@@ -165,7 +165,7 @@ class Parser:
             elif Parser.tokens.actual.type == 'DIV':
                 Parser.tokens.selectNext()
 
-                print(Parser.tokens.actual.value)
+                # print(Parser.tokens.actual.value)
 
                 # if Parser.tokens.actual.type == 'INT':
                 resultado //= Parser.parseFactor()
