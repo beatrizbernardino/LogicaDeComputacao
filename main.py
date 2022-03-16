@@ -125,7 +125,7 @@ class Parser:
 
         if Parser.tokens.actual.type == 'INT':
             resultado = Parser.tokens.actual.value
-            # Parser.tokens.selectNext()
+            Parser.tokens.selectNext()
         elif Parser.tokens.actual.type == 'PLUS' or Parser.tokens.actual.type == 'MINUS':
             Parser.tokens.selectNext()
             Parser.parseFactor()
