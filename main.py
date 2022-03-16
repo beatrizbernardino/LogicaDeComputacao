@@ -1,4 +1,5 @@
 from distutils.log import error
+from multiprocessing.sharedctypes import Value
 from os import execlp
 import sys
 
@@ -47,6 +48,18 @@ class Tokenizer:
 
             self.position += 1
             self.actual = Token('-', 'MINUS')
+            return self.actual
+
+        elif self.origin[self.position] == '(':
+
+            self.position += 1
+            self.actual = Token('(', 'OPEN_PAR')
+            return self.actual
+
+        elif self.origin[self.position] == ')':
+
+            self.position += 1
+            self.actual = Token(')', 'CLOSE_PAR')
             return self.actual
 
         elif self.origin[self.position].isdigit():
@@ -106,32 +119,55 @@ class Parser:
 
         return resultado
 
-    def parseTerm():
+    def parseFactor():
+
         resultado = 0
 
         if Parser.tokens.actual.type == 'INT':
             resultado = Parser.tokens.actual.value
+            # Parser.tokens.selectNext()
+        elif Parser.tokens.actual.type == 'PLUS' or Parser.tokens.actual.type == 'MINUS':
             Parser.tokens.selectNext()
+            Parser.parseFactor()
 
-            while Parser.tokens.actual.type == 'MULT' or Parser.tokens.actual.type == 'DIV':
-                if Parser.tokens.actual.type == 'MULT':
-                    Parser.tokens.selectNext()
-
-                    if Parser.tokens.actual.type == 'INT':
-                        resultado *= Parser.tokens.actual.value
-                    else:
-                        raise ValueError('Invalid Token')
-                elif Parser.tokens.actual.type == 'DIV':
-                    Parser.tokens.selectNext()
-
-                    if Parser.tokens.actual.type == 'INT':
-                        resultado //= Parser.tokens.actual.value
-                    else:
-                        raise ValueError('Invalid Token')
+        elif Parser.tokens.actual.type == 'OPEN_PAR':
+            Parser.tokens.selectNext()
+            resultado = Parser.parseExpression()
+            if Parser.tokens.actual.type == 'CLOSE_PAR':
                 Parser.tokens.selectNext()
-            return resultado
+            else:
+                raise ValueError('Não fechou Parenteses')
         else:
-            raise ValueError('Invalid Code')
+            raise ValueError('Invalid Expression')
+        return resultado
+
+    def parseTerm():
+        resultado = 0
+
+        # if Parser.tokens.actual.type == 'INT':
+        #     resultado = Parser.tokens.actual.value
+        #     Parser.tokens.selectNext()
+        resultado = Parser.parseFactor()
+
+        while Parser.tokens.actual.type == 'MULT' or Parser.tokens.actual.type == 'DIV':
+            if Parser.tokens.actual.type == 'MULT':
+                Parser.tokens.selectNext()
+
+                if Parser.tokens.actual.type == 'INT':
+                    resultado *= Parser.tokens.actual.value
+                else:
+                    raise ValueError('Invalid Token')
+            elif Parser.tokens.actual.type == 'DIV':
+                Parser.tokens.selectNext()
+
+                if Parser.tokens.actual.type == 'INT':
+                    resultado //= Parser.tokens.actual.value
+                else:
+                    raise ValueError('Invalid Token')
+            Parser.tokens.selectNext()
+        return resultado
+        # else:
+        #     raise ValueError('Invalid Code')
 
     def run(code):
         if code[0] == ' ' and (code[1] == "+" or code[1] == "-" or code[1] == "*" or code[1] == "/"):
