@@ -62,6 +62,11 @@ class Tokenizer:
             self.actual = Token(')', 'CLOSE_PAR')
             return self.actual
 
+        elif self.origin[self.position] == ' ':
+
+            self.position += 1
+            Parser.tokens.selectNext()
+
         elif self.origin[self.position].isdigit():
             candidato = self.origin[self.position]
 
@@ -191,6 +196,8 @@ class Parser:
         Parser.tokens.selectNext()
 
         resultado = Parser.parseExpression()
+
+        print(Parser.tokens.actual.type)
 
         if Parser.tokens.actual.type == 'EOF':
             return resultado
