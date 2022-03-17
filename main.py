@@ -197,8 +197,6 @@ class Parser:
 
         resultado = Parser.parseExpression()
 
-        print(Parser.tokens.actual.type)
-
         if Parser.tokens.actual.type == 'EOF':
             return resultado
         else:
