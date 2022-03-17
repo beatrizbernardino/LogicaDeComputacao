@@ -124,57 +124,53 @@ class Parser:
         resultado = 0
 
         if Parser.tokens.actual.type == 'INT':
+
             resultado = Parser.tokens.actual.value
             Parser.tokens.selectNext()
+
         elif Parser.tokens.actual.type == 'PLUS':
+
             Parser.tokens.selectNext()
             resultado = Parser.parseFactor()
 
         elif Parser.tokens.actual.type == 'MINUS':
+
             Parser.tokens.selectNext()
             resultado = -Parser.parseFactor()
 
         elif Parser.tokens.actual.type == 'OPEN_PAR':
+
             Parser.tokens.selectNext()
             resultado = Parser.parseExpression()
+
             if Parser.tokens.actual.type == 'CLOSE_PAR':
                 Parser.tokens.selectNext()
             else:
                 raise ValueError('Não fechou Parenteses')
         else:
             raise ValueError('Invalid Expression-parseFactor')
+
         return resultado
 
     def parseTerm():
+
         resultado = 0
 
-        # if Parser.tokens.actual.type == 'INT':
-        #     resultado = Parser.tokens.actual.value
-        #     Parser.tokens.selectNext()
         resultado = Parser.parseFactor()
 
         while Parser.tokens.actual.type == 'MULT' or Parser.tokens.actual.type == 'DIV':
 
             if Parser.tokens.actual.type == 'MULT':
-                Parser.tokens.selectNext()
 
-                # if Parser.tokens.actual.type == 'INT':
+                Parser.tokens.selectNext()
                 resultado *= Parser.parseFactor()
-                # else:
-                #     raise ValueError('Invalid Token- mult parseTerm')
+
             elif Parser.tokens.actual.type == 'DIV':
+
                 Parser.tokens.selectNext()
-
-                # print(Parser.tokens.actual.value)
-
-                # if Parser.tokens.actual.type == 'INT':
                 resultado //= Parser.parseFactor()
-                # else:
-                #     raise ValueError('Invalid Token- div parseTerm')
-            # Parser.tokens.selectNext()
+
         return resultado
-        # else:
-        #     raise ValueError('Invalid Code')
 
     def run(code):
         # if code[0] == ' ' and (code[1] == "+" or code[1] == "-" or code[1] == "*" or code[1] == "/"):
@@ -185,7 +181,7 @@ class Parser:
 
         #     raise ValueError('Invalid Code')
 
-        code = code.replace(" ", '')
+        # code = code.replace(" ", '')
 
         PrePro.code = code
 
@@ -195,7 +191,8 @@ class Parser:
         Parser.tokens.selectNext()
 
         resultado = Parser.parseExpression()
-        if Parser.tokens.actual.value != 'EOF':
+
+        if Parser.tokens.actual.type == 'EOF':
             return resultado
         else:
             raise ValueError('EOF')
