@@ -244,21 +244,24 @@ class Parser:
 
         return node
 
-    def run(code):
+    def run(file):
 
-        PrePro.code = code
+        with open(file) as f:
+            for code in f:
 
-        PrePro.filter()
+                PrePro.code = code
 
-        Parser.tokens = Tokenizer(PrePro.code)
-        Parser.tokens.selectNext()
+                PrePro.filter()
 
-        node = Parser.parseExpression()
+                Parser.tokens = Tokenizer(PrePro.code)
+                Parser.tokens.selectNext()
 
-        if Parser.tokens.actual.type == 'EOF':
-            return node.evaluate()
-        else:
-            raise ValueError('EOF')
+                node = Parser.parseExpression()
+
+                if Parser.tokens.actual.type == 'EOF':
+                    return node.evaluate()
+                else:
+                    raise ValueError('EOF')
 
 
 print(Parser.run(sys.argv[1]))
