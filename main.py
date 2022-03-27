@@ -31,9 +31,9 @@ class UnOp(Node):
     def evaluate(self):
 
         if self.value == '+':
-            return self.evaluate(self.children[0])
+            return self.children[0].evaluate()
         elif self.value == '-':
-            return - self.evaluate(self.children[0])
+            return - self.children[0].evaluate()
         else:
             raise ValueError('UnOp')
 
@@ -233,13 +233,13 @@ class Parser:
             if Parser.tokens.actual.type == 'MULT':
 
                 Parser.tokens.selectNext()
-                node = BinOp('*', [node, Parser.parseFactor()])
+                node = BinOp('*', [Parser.parseFactor()])
                 # resultado *= Parser.parseFactor()
 
             elif Parser.tokens.actual.type == 'DIV':
 
                 Parser.tokens.selectNext()
-                node = BinOp('/', [node, Parser.parseFactor()])
+                node = BinOp('/', [Parser.parseFactor()])
                 # resultado //= Parser.parseFactor()
 
         return node
