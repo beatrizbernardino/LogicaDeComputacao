@@ -2,6 +2,55 @@ from distutils.log import error
 from multiprocessing.sharedctypes import Value
 from os import execlp
 import sys
+import json
+
+
+class Node:
+
+    def __init__(self, value, children):
+
+        self.value = value
+        self.children = children
+
+    def evaluate(self):
+        pass
+
+
+class NoOp(Node):
+
+    def evaluate():
+        pass
+
+
+class IntVal(Node):
+    def evaluate(self):
+        return self.value
+
+
+class UnOp(Node):
+    def evaluate(self):
+
+        if self.value == '+':
+            return self.evaluate(self.children[0])
+        elif self.value == '-':
+            return - self.evaluate(self.children[0])
+        else:
+            raise ValueError('UnOp')
+
+
+class BinOp(Node):
+    def evaluate(self):
+
+        if self.value == '+':
+            return self.children[0].evaluate() + self.children[1].evaluate()
+        elif self.value == '-':
+            return self.children[0].evaluate() - self.children[1].evaluate()
+        elif self.value == '*':
+            return self.children[0].evaluate() * self.children[1].evaluate()
+        elif self.value == '/':
+            return self.children[0].evaluate() // self.children[1].evaluate()
+        else:
+            raise error('BinOp')
 
 
 class Token:
@@ -106,87 +155,96 @@ class Parser:
 
     def parseExpression():
 
-        resultado = Parser.parseTerm()
+        # node = IntVal(Parser.tokens.actual.value, [
+        #   node, Parser.parseTerm()])
+        node = Parser.parseTerm()
 
         while Parser.tokens.actual.type == 'PLUS' or Parser.tokens.actual.type == 'MINUS':
 
             if Parser.tokens.actual.type == 'PLUS':
                 Parser.tokens.selectNext()
 
-                resultado += Parser.parseTerm()
+                node = BinOp('+', [node, Parser.parseTerm()])
+
+                # resultado += Parser.parseTerm()
 
             elif Parser.tokens.actual.type == 'MINUS':
                 Parser.tokens.selectNext()
-                resultado -= Parser.parseTerm()
+                node = BinOp('-', [node, Parser.parseTerm()])
+
+                # resultado -= Parser.parseTerm()
 
             else:
                 raise ValueError('Invalid Token- parseExpression')
 
-        return resultado
+        return node
 
     def parseFactor():
 
-        resultado = 0
+        # resultado = 0
+
+        # node = None
 
         if Parser.tokens.actual.type == 'INT':
 
-            resultado = Parser.tokens.actual.value
+            # resultado = Parser.tokens.actual.value
+            node = IntVal(Parser.tokens.actual.value, [])
             Parser.tokens.selectNext()
+            return node
 
         elif Parser.tokens.actual.type == 'PLUS':
 
             Parser.tokens.selectNext()
-            resultado = Parser.parseFactor()
+            # resultado = Parser.parseFactor()
+            node = UnOp('+', [Parser.parseFactor()])
+            return node
 
         elif Parser.tokens.actual.type == 'MINUS':
 
             Parser.tokens.selectNext()
-            resultado = -Parser.parseFactor()
+            # resultado = -Parser.parseFactor()
+            node = UnOp('-', [Parser.parseFactor()])
+
+            return node
 
         elif Parser.tokens.actual.type == 'OPEN_PAR':
 
             Parser.tokens.selectNext()
-            resultado = Parser.parseExpression()
+            node = Parser.parseExpression()
 
             if Parser.tokens.actual.type == 'CLOSE_PAR':
                 Parser.tokens.selectNext()
+                return node
             else:
                 raise ValueError('Não fechou Parenteses')
         else:
             raise ValueError('Invalid Expression-parseFactor')
-
-        return resultado
+        # return node
 
     def parseTerm():
 
-        resultado = 0
-
-        resultado = Parser.parseFactor()
+        # resultado = 0
+        node = Parser.parseFactor()
+        # node = IntVal(Parser.tokens.actual.value, [
+        # node, Parser.parseFactor()])
 
         while Parser.tokens.actual.type == 'MULT' or Parser.tokens.actual.type == 'DIV':
 
             if Parser.tokens.actual.type == 'MULT':
 
                 Parser.tokens.selectNext()
-                resultado *= Parser.parseFactor()
+                node = BinOp('*', [node, Parser.parseFactor()])
+                # resultado *= Parser.parseFactor()
 
             elif Parser.tokens.actual.type == 'DIV':
 
                 Parser.tokens.selectNext()
-                resultado //= Parser.parseFactor()
+                node = BinOp('/', [node, Parser.parseFactor()])
+                # resultado //= Parser.parseFactor()
 
-        return resultado
+        return node
 
     def run(code):
-        # if code[0] == ' ' and (code[1] == "+" or code[1] == "-" or code[1] == "*" or code[1] == "/"):
-
-        #     raise ValueError('Invalid Code')
-
-        # if code[0] == ' ' and (code[1] == "+" or code[1] == "-" or code[1] == "*" or code[1] == "/") or ('+' not in code and '-' not in code and '*' not in code and '/' not in code):
-
-        #     raise ValueError('Invalid Code')
-
-        # code = code.replace(" ", '')
 
         PrePro.code = code
 
@@ -195,10 +253,10 @@ class Parser:
         Parser.tokens = Tokenizer(PrePro.code)
         Parser.tokens.selectNext()
 
-        resultado = Parser.parseExpression()
+        node = Parser.parseExpression()
 
         if Parser.tokens.actual.type == 'EOF':
-            return resultado
+            return node.evaluate()
         else:
             raise ValueError('EOF')
 
