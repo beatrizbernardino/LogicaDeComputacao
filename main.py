@@ -233,13 +233,13 @@ class Parser:
             if Parser.tokens.actual.type == 'MULT':
 
                 Parser.tokens.selectNext()
-                node = BinOp('*', [Parser.parseFactor()])
+                node = BinOp('*', [node, Parser.parseFactor()])
                 # resultado *= Parser.parseFactor()
 
             elif Parser.tokens.actual.type == 'DIV':
 
                 Parser.tokens.selectNext()
-                node = BinOp('/', [Parser.parseFactor()])
+                node = BinOp('/', [node, Parser.parseFactor()])
                 # resultado //= Parser.parseFactor()
 
         return node
