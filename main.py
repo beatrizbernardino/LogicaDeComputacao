@@ -19,7 +19,7 @@ class Node:
 
 class NoOp(Node):
 
-    def evaluate():
+    def evaluate(self):
         pass
 
 
