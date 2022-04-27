@@ -496,7 +496,7 @@ class Parser:
 
         node = Parser.parseFactor()
 
-        while Parser.tokens.actual.type == 'MULT' or Parser.tokens.actual.type == 'DIV':
+        while Parser.tokens.actual.type == 'MULT' or Parser.tokens.actual.type == 'DIV' or Parser.tokens.actual.type == 'AND':
 
             if Parser.tokens.actual.type == 'MULT':
 
