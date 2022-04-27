@@ -1,4 +1,5 @@
 from distutils.log import error
+from mmap import ALLOCATIONGRANULARITY
 from multiprocessing.sharedctypes import Value
 from os import execlp
 import sys
@@ -35,6 +36,9 @@ class UnOp(Node):
             return self.children[0].evaluate()
         elif self.value == '-':
             return - self.children[0].evaluate()
+        elif self.value == "!":
+            return not self.children[0].evaluate()
+
         else:
             raise ValueError('UnOp')
 
@@ -50,6 +54,17 @@ class BinOp(Node):
             return self.children[0].evaluate() * self.children[1].evaluate()
         elif self.value == '/':
             return self.children[0].evaluate() // self.children[1].evaluate()
+        elif self.value == '==':
+            return self.children[0].evaluate() == self.children[1].evaluate()
+        elif self.value == '>':
+            return self.children[0].evaluate() > self.children[1].evaluate()
+        elif self.value == '<':
+            return self.children[0].evaluate() < self.children[1].evaluate()
+        elif self.value == '||':
+            return self.children[0].evaluate() or self.children[1].evaluate()
+        elif self.value == '&&':
+            return self.children[0].evaluate() and self.children[1].evaluate()
+
         else:
             raise error('BinOp')
 
@@ -88,6 +103,26 @@ class Printf(Node):
         print(self.children[0].evaluate())
 
 
+class Scanf(Node):
+
+    def evaluate(self):
+        return int(input())
+
+
+class While(Node):
+    def evaluate(self):
+        while self.children[0].evaluate():
+            self.children[1].evaluate()
+
+
+class IF(Node):
+    def evaluate(self):
+        if self.children[0].evaluate():
+            self.children[1].evaluate()
+        elif len(self.children) > 2:
+            self.children[2].evaluate()
+
+
 class Assignment(Node):
     def evaluate(self):
 
@@ -108,7 +143,7 @@ class Tokenizer:
         self.origin = origin  # '1+2+3'
         self.position = 0
         self.actual = None
-        self.reserved = ["printf"]
+        self.reserved = ["printf", "scanf", "if", "else", "while"]
 
     def selectNext(self):
 
@@ -174,7 +209,52 @@ class Tokenizer:
         elif self.origin[self.position] == '=':
 
             self.position += 1
-            self.actual = Token('=', 'EQUAL')
+
+            if self.origin[self.position] == '=':
+                self.position += 1
+                self.actual = Token('==', 'DOUBLE_EQUAL')
+            else:
+                self.actual = Token('=', 'EQUAL')
+            return self.actual
+
+        elif self.origin[self.position] == '|':
+
+            self.position += 1
+
+            if self.origin[self.position] == '|':
+                self.position += 1
+                self.actual = Token('||', 'OR')
+                return self.actual
+            else:
+                raise ValueError("Invalid Token")
+
+        elif self.origin[self.position] == '&':
+
+            self.position += 1
+
+            if self.origin[self.position] == '&':
+                self.position += 1
+                self.actual = Token('&&', 'AND')
+                return self.actual
+            else:
+                raise ValueError("Invalid Token")
+
+        elif self.origin[self.position] == '>':
+
+            self.position += 1
+            self.actual = Token('>', 'GREATER')
+            return self.actual
+
+        elif self.origin[self.position] == '!':
+
+            self.position += 1
+            self.actual = Token('!', 'NOT')
+            return self.actual
+
+        elif self.origin[self.position] == '<':
+
+            self.position += 1
+            self.actual = Token('<', 'LESS')
             return self.actual
 
         elif self.origin[self.position] == ' ' or self.origin[self.position] == '\n':
@@ -208,7 +288,16 @@ class Tokenizer:
                 self.actual = Token(candidato, 'IDENTIFIER')
                 return self.actual
             else:
-                self.actual = Token(candidato, 'PRINT')
+                if candidato == "printf":
+                    self.actual = Token(candidato, 'PRINT')
+                elif candidato == "scanf":
+                    self.actual = Token(candidato, 'SCANF')
+                elif candidato == "if":
+                    self.actual = Token(candidato, 'IF')
+                elif candidato == "else":
+                    self.actual = Token(candidato, 'ELSE')
+                elif candidato == "while":
+                    self.actual = Token(candidato, 'WHILE')
                 return self.actual
 
         else:
@@ -272,7 +361,7 @@ class Parser:
             if Parser.tokens.actual.type == "EQUAL":
 
                 Parser.tokens.selectNext()
-                node = Assignment("=", [node, Parser.parseExpression()])
+                node = Assignment("=", [node, Parser.parseRelExpression()])
                 if Parser.tokens.actual.type == "NO_OP":
                     Parser.tokens.selectNext()
                     return node
@@ -292,7 +381,7 @@ class Parser:
                 Parser.tokens.selectNext()
                 # print(Parser.tokens.actual.value)
 
-                node = Printf("", [Parser.parseExpression()])
+                node = Printf("", [Parser.parseRelExpression()])
 
             if Parser.tokens.actual.type == 'CLOSE_PAR':
                 Parser.tokens.selectNext()
@@ -305,9 +394,79 @@ class Parser:
             else:
                 raise ValueError('Não fechou Parenteses')
 
+        elif Parser.tokens.actual.type == "PRINT":
+            # print(Parser.tokens.actual.type, Parser.tokens.actual.value)
+
+            Parser.tokens.selectNext()
+
+            if Parser.tokens.actual.type == 'OPEN_PAR':
+
+                Parser.tokens.selectNext()
+                # print(Parser.tokens.actual.value)
+
+                node = Printf("", [Parser.parseRelExpression()])
+
+            if Parser.tokens.actual.type == 'CLOSE_PAR':
+                Parser.tokens.selectNext()
+
+                if Parser.tokens.actual.type == "NO_OP":
+                    Parser.tokens.selectNext()
+                    return node
+                else:
+                    raise ValueError("Faltou ; - statement")
+            else:
+                raise ValueError('Não fechou Parenteses')
+
+        elif Parser.tokens.actual.type == "WHILE":
+            # print(Parser.tokens.actual.type, Parser.tokens.actual.value)
+
+            Parser.tokens.selectNext()
+
+            if Parser.tokens.actual.type == 'OPEN_PAR':
+
+                Parser.tokens.selectNext()
+                # print(Parser.tokens.actual.value)
+
+                node = While("", [Parser.parseRelExpression()])
+
+            if Parser.tokens.actual.type == 'CLOSE_PAR':
+                Parser.tokens.selectNext()
+                node.children.append(Parser.parseStatement())
+                return node
+
+            else:
+                raise ValueError('Não fechou Parenteses')
+
+        elif Parser.tokens.actual.type == "IF":
+            # print(Parser.tokens.actual.type, Parser.tokens.actual.value)
+
+            Parser.tokens.selectNext()
+
+            if Parser.tokens.actual.type == 'OPEN_PAR':
+
+                Parser.tokens.selectNext()
+                # print(Parser.tokens.actual.value)
+
+                node = IF("", [Parser.parseRelExpression()])
+
+            if Parser.tokens.actual.type == 'CLOSE_PAR':
+
+                Parser.tokens.selectNext()
+                node.children.append(Parser.parseStatement())
+
+                if Parser.tokens.actual.type == 'ELSE':
+                    Parser.tokens.selectNext()
+                    node.children.append(Parser.parseStatement())
+
+                return node
+
+            else:
+                raise ValueError('Não fechou Parenteses')
+
         else:
             # print(Parser.tokens.actual.type)
-            raise ValueError('Cadeia invalida - statement')
+            node = Parser.parseBlock()
+            return node
 
     def parseExpression():
 
@@ -323,6 +482,10 @@ class Parser:
             elif Parser.tokens.actual.type == 'MINUS':
                 Parser.tokens.selectNext()
                 node = BinOp('-', [node, Parser.parseTerm()])
+
+            elif Parser.tokens.actual.type == 'OR':
+                Parser.tokens.selectNext()
+                node = BinOp('||', [node, Parser.parseTerm()])
 
             else:
                 raise ValueError('Invalid Token- parseExpression')
@@ -344,6 +507,14 @@ class Parser:
 
                 Parser.tokens.selectNext()
                 node = BinOp('/', [node, Parser.parseFactor()])
+
+            elif Parser.tokens.actual.type == 'AND':
+
+                Parser.tokens.selectNext()
+                node = BinOp('&&', [node, Parser.parseFactor()])
+
+            else:
+                raise ValueError('Invalid Token- parseTerm')
 
         return node
 
@@ -378,20 +549,71 @@ class Parser:
             node = UnOp('-', [Parser.parseFactor()])
 
             return node
+        elif Parser.tokens.actual.type == 'NOT':
+
+            Parser.tokens.selectNext()
+            # resultado = -Parser.parseFactor()
+            node = UnOp('!', [Parser.parseFactor()])
+
+            return node
 
         elif Parser.tokens.actual.type == 'OPEN_PAR':
 
             Parser.tokens.selectNext()
-            node = Parser.parseExpression()
+            node = Parser.parseRelExpression()
 
             if Parser.tokens.actual.type == 'CLOSE_PAR':
                 Parser.tokens.selectNext()
                 return node
             else:
                 raise ValueError('Não fechou Parenteses')
+
+        elif Parser.tokens.actual.type == 'SCANF':
+
+            Parser.tokens.selectNext()
+
+            node = Scanf("", [])
+
+            if Parser.tokens.actual.type == 'OPEN_PAR':
+
+                Parser.tokens.selectNext()
+
+                if Parser.tokens.actual.type == 'CLOSE_PAR':
+                    Parser.tokens.selectNext()
+                    return node
+                else:
+                    raise ValueError('Não fechou Parenteses')
+
+            else:
+                raise ValueError('Não fechou Parenteses')
+
         else:
             raise ValueError('Invalid Expression-parseFactor')
         # return node
+
+    def parseRelExpression():
+
+        node = Parser.parseExpression()
+
+        while Parser.tokens.actual.type == 'DOUBLE_EQUAL' or Parser.tokens.actual.type == 'LESS' or Parser.tokens.actual.type == 'GREATER':
+
+            if Parser.tokens.actual.type == 'DOUBLE_EQUAL':
+                Parser.tokens.selectNext()
+
+                node = BinOp('==', [node, Parser.parseExpression()])
+
+            elif Parser.tokens.actual.type == 'LESS':
+                Parser.tokens.selectNext()
+                node = BinOp('<', [node, Parser.parseExpression()])
+
+            elif Parser.tokens.actual.type == 'GREATER':
+                Parser.tokens.selectNext()
+                node = BinOp('>', [node, Parser.parseExpression()])
+
+            else:
+                raise ValueError('Invalid Token- parseExpression')
+
+        return node
 
     def run(file):
 
