@@ -3,3 +3,7 @@
 
 
 ![plot](https://github.com/beatrizbernardino/LogicaDeComputacao/blob/main/Diagrama.png)
+
+
+
+![plot](https://github.com/beatrizbernardino/LogicaDeComputacao/blob/main/ebnf.png)
