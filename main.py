@@ -472,7 +472,7 @@ class Parser:
 
         node = Parser.parseTerm()
 
-        while Parser.tokens.actual.type == 'PLUS' or Parser.tokens.actual.type == 'MINUS':
+        while Parser.tokens.actual.type == 'PLUS' or Parser.tokens.actual.type == 'MINUS' or Parser.tokens.actual.type == 'OR':
 
             if Parser.tokens.actual.type == 'PLUS':
                 Parser.tokens.selectNext()
