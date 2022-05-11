@@ -5,5 +5,22 @@
 ![plot](https://github.com/beatrizbernardino/LogicaDeComputacao/blob/main/Diagrama.png)
 
 
+### EBNF
 
-![plot](https://github.com/beatrizbernardino/LogicaDeComputacao/blob/main/ebnf.png)
+```
+BLOCK = "{" , { STATEMENT }, "}" ;
+STATEMENT = ( λ | ASSIGNMENT | PRINT | BLOCK | WHILE | IF), ";" ;
+FACTOR = NUMBER | IDENTIFIER | (("+" | "-" | "!") , FACTOR) | "(" , RELEXPRESSION , ")" | SCANF;
+TERM = FACTOR, { ("*" | "/" | "&&"), FACTOR } ;
+EXPRESSION = TERM, { ("+" | "-" | "||"), TERM } ;
+RELEXPRESSION = EXPRESSION , {("<" | ">" | "==") , EXPRESSION } ;
+WHILE = "while", "(", RELEXPRESSION ,")", STATEMENT;
+IF = "if", "(", RELEXPRESSION ,")", STATEMENT, (("else", STATEMENT) | λ );
+ASSIGNMENT = IDENTIFIER, "=" , EXPRESSION ;
+PRINT = "printf", "(" , EXPRESSION, ")" ;
+SCANF = "scanf", "(", ")" ;
+IDENTIFIER = LETTER, { LETTER | DIGIT | "_" } ;
+NUMBER = DIGIT , { DIGIT } ;
+LETTER = ( a | ... | z | A | ... | Z ) ;
+DIGIT = ( 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 ) ;
+```
