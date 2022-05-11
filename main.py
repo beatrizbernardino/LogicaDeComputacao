@@ -26,18 +26,36 @@ class NoOp(Node):
 
 class IntVal(Node):
     def evaluate(self):
-        return self.value
+        return (self.value, "INT")
+
+
+class StrVal(Node):
+    def evaluate(self):
+        return (self.value, "STR")
+
+
+class VarDec(Node):
+
+    def evaluate(self):
+
+        for child in self.children:
+
+            SymbolTable.create(child, self.value)
 
 
 class UnOp(Node):
     def evaluate(self):
 
-        if self.value == '+':
-            return self.children[0].evaluate()
-        elif self.value == '-':
-            return - self.children[0].evaluate()
-        elif self.value == "!":
-            return not self.children[0].evaluate()
+        c0 = self.children[0].evaluate()
+
+        if(c0[1] == "INT"):
+
+            if self.value == '+':
+                return (c0, "INT")
+            elif self.value == '-':
+                return (-c0, "INT")
+            elif self.value == "!":
+                return (not c0, "INT")
 
         else:
             raise ValueError('UnOp')
@@ -46,27 +64,48 @@ class UnOp(Node):
 class BinOp(Node):
     def evaluate(self):
 
-        if self.value == '+':
-            return self.children[0].evaluate() + self.children[1].evaluate()
-        elif self.value == '-':
-            return self.children[0].evaluate() - self.children[1].evaluate()
-        elif self.value == '*':
-            return self.children[0].evaluate() * self.children[1].evaluate()
-        elif self.value == '/':
-            return self.children[0].evaluate() // self.children[1].evaluate()
-        elif self.value == '==':
-            return self.children[0].evaluate() == self.children[1].evaluate()
-        elif self.value == '>':
-            return self.children[0].evaluate() > self.children[1].evaluate()
-        elif self.value == '<':
-            return self.children[0].evaluate() < self.children[1].evaluate()
-        elif self.value == '||':
-            return self.children[0].evaluate() or self.children[1].evaluate()
-        elif self.value == '&&':
-            return self.children[0].evaluate() and self.children[1].evaluate()
+        c0 = self.children[0].evaluate()
+        c1 = self.children[1].evaluate()
 
+        if(c0[1] == c1[1]):
+
+            if(c0[1] == "INT"):
+
+                if self.value == '+':
+                    return (c0[0]+c1[0], c0[1])
+                elif self.value == '-':
+                    return (c0[0] - c1[0], c0[1])
+                elif self.value == '*':
+                    return (c0[0] * c1[0], c0[1])
+                elif self.value == '/':
+                    return (c0[0] // c1[0], c0[1])
+                elif self.value == '||':
+                    return (c0[0] or c1[0], c0[1])
+                elif self.value == '&&':
+                    return (c0[0] and c1[0], c0[1])
+                elif self.value == '==':
+                    return (c0[0] == c1[0], c0[1])
+                elif self.value == '>':
+                    return (c0[0] > c1[0], c0[1])
+                elif self.value == '<':
+                    return (c0[0] < c1[0], c0[1])
+
+            elif(c0[1] == "STRING"):
+
+                if self.value == '==':
+                    return (c0 == c1, c0[1])
+                elif self.value == '>':
+                    return (c0 > c1, c0[1])
+                elif self.value == '<':
+                    return (c0 < c1, c0[1])
         else:
-            raise error('BinOp')
+            if self.value == '.':
+
+                return (c0+c1, "STRING")
+
+            else:
+                raise ValueError(
+                    "operation invalid with type of variable - BinOp")
 
 
 class Block(Node):
@@ -79,6 +118,8 @@ class SymbolTable:
 
     dicionario = {}
 
+    print(dicionario)
+
     def getter(chave):
 
         if chave in dict.keys(SymbolTable.dicionario):
@@ -89,7 +130,21 @@ class SymbolTable:
 
     def setter(chave, valor):
 
-        SymbolTable.dicionario[chave] = valor
+        if chave in dict.keys(SymbolTable.dicionario):
+            if valor[1] == SymbolTable.dicionario[chave][1]:
+
+                novo_valor = (valor[0], valor[1])
+
+                SymbolTable.dicionario[chave] = novo_valor
+            else:
+                raise ValueError("Wrong type declaration - SymbolTable")
+
+        else:
+            raise ValueError()
+
+    def create(chave, tipo):
+
+        SymbolTable.dicionario[chave] = (None, tipo)
 
 
 class Identifier(Node):
@@ -100,13 +155,13 @@ class Identifier(Node):
 class Printf(Node):
 
     def evaluate(self):
-        print(self.children[0].evaluate())
+        print(self.children[0].evaluate()[0])
 
 
 class Scanf(Node):
 
     def evaluate(self):
-        return int(input())
+        return (int(input()), "INT")
 
 
 class While(Node):
@@ -143,7 +198,8 @@ class Tokenizer:
         self.origin = origin  # '1+2+3'
         self.position = 0
         self.actual = None
-        self.reserved = ["printf", "scanf", "if", "else", "while"]
+        self.reserved = ["printf", "scanf",
+                         "if", "else", "while", "int", "str"]
 
     def selectNext(self):
 
@@ -162,6 +218,17 @@ class Tokenizer:
 
             self.position += 1
             self.actual = Token('*', 'MULT')
+            return self.actual
+
+        elif self.origin[self.position] == '.':
+
+            self.position += 1
+            self.actual = Token('.', 'CONCAT')
+            return self.actual
+        elif self.origin[self.position] == ',':
+
+            self.position += 1
+            self.actual = Token(',', 'COMMA')
             return self.actual
 
         elif self.origin[self.position] == '/':
@@ -296,8 +363,10 @@ class Tokenizer:
                     self.actual = Token(candidato, 'IF')
                 elif candidato == "else":
                     self.actual = Token(candidato, 'ELSE')
-                elif candidato == "while":
-                    self.actual = Token(candidato, 'WHILE')
+                elif candidato == "str":
+                    self.actual = Token(candidato, 'STRING')
+                elif candidato == "int":
+                    self.actual = Token(candidato, 'INT')
                 return self.actual
 
         else:
@@ -352,6 +421,19 @@ class Parser:
 
             node = NoOp(";", [])
             Parser.tokens.selectNext()
+            return node
+
+        elif Parser.tokens.actual.type == "INT" or Parser.tokens.actual.type == "STRING":
+            node = VarDec(Parser.tokens.actual.type, [])
+            Parser.tokens.selectNext()
+
+            while Parser.tokens.actual.type == "IDENTIFIER":
+                node.children.append(Parser.tokens.actual.value)
+
+                Parser.tokens.selectNext()
+
+                if Parser.tokens.actual.type == 'COMMA':
+                    Parser.tokens.selectNext()
             return node
 
         elif Parser.tokens.actual.type == "IDENTIFIER":
@@ -487,6 +569,9 @@ class Parser:
                 Parser.tokens.selectNext()
                 node = BinOp('||', [node, Parser.parseTerm()])
 
+            elif Parser.tokens.actual.type == 'CONCAT':
+                Parser.tokens.selectNext()
+                node = BinOp('.', [node, Parser.parseTerm()])
             else:
                 raise ValueError('Invalid Token- parseExpression')
 
@@ -527,7 +612,14 @@ class Parser:
             Parser.tokens.selectNext()
             return node
 
-        if Parser.tokens.actual.type == 'IDENTIFIER':
+        elif Parser.tokens.actual.type == 'STRING':
+
+            # resultado = Parser.tokens.actual.value
+            node = StrVal(Parser.tokens.actual.value, [])
+            Parser.tokens.selectNext()
+            return node
+
+        elif Parser.tokens.actual.type == 'IDENTIFIER':
 
             # resultado = Parser.tokens.actual.value
 
