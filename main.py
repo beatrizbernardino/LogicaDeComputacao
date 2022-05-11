@@ -80,24 +80,24 @@ class BinOp(Node):
                 elif self.value == '/':
                     return (c0[0] // c1[0], c0[1])
                 elif self.value == '||':
-                    return (c0[0] or c1[0], c0[1])
+                    return (int(c0[0] or c1[0]), c0[1])
                 elif self.value == '&&':
-                    return (c0[0] and c1[0], c0[1])
+                    return (int(c0[0] and c1[0]), c0[1])
                 elif self.value == '==':
-                    return (c0[0] == c1[0], c0[1])
+                    return (int(c0[0] == c1[0]), c0[1])
                 elif self.value == '>':
-                    return (c0[0] > c1[0], c0[1])
+                    return (int(c0[0] > c1[0]), c0[1])
                 elif self.value == '<':
-                    return (c0[0] < c1[0], c0[1])
+                    return (int(c0[0] < c1[0]), c0[1])
 
             elif(c0[1] == "STRING"):
 
                 if self.value == '==':
-                    return (c0 == c1, c0[1])
+                    return (int(c0 == c1), c0[1])
                 elif self.value == '>':
-                    return (c0 > c1, c0[1])
+                    return (int(c0 > c1), c0[1])
                 elif self.value == '<':
-                    return (c0 < c1, c0[1])
+                    return (int(c0 < c1), c0[1])
         else:
             if self.value == '.':
 
@@ -118,8 +118,6 @@ class SymbolTable:
 
     dicionario = {}
 
-    print(dicionario)
-
     def getter(chave):
 
         if chave in dict.keys(SymbolTable.dicionario):
@@ -131,6 +129,7 @@ class SymbolTable:
     def setter(chave, valor):
 
         if chave in dict.keys(SymbolTable.dicionario):
+
             if valor[1] == SymbolTable.dicionario[chave][1]:
 
                 novo_valor = (valor[0], valor[1])
@@ -144,7 +143,11 @@ class SymbolTable:
 
     def create(chave, tipo):
 
-        SymbolTable.dicionario[chave] = (None, tipo)
+        if chave not in dict.keys(SymbolTable.dicionario):
+
+            SymbolTable.dicionario[chave] = (None, tipo)
+        else:
+            raise ValueError("Key alread created- SB")
 
 
 class Identifier(Node):
@@ -364,10 +367,21 @@ class Tokenizer:
                 elif candidato == "else":
                     self.actual = Token(candidato, 'ELSE')
                 elif candidato == "str":
-                    self.actual = Token(candidato, 'STRING')
+                    self.actual = Token(candidato.upper(), 'TYPE')
                 elif candidato == "int":
-                    self.actual = Token(candidato, 'INT')
+                    self.actual = Token(candidato.upper(), 'TYPE')
                 return self.actual
+
+        elif self.origin[self.position] == '"':
+
+            self.position += 1
+            candidato = None
+
+            while self.origin[self.position] != '"' and self.position < len(self.origin):
+                candidato += self.origin[self.position]
+                self.position += 1
+
+            self.actual = Token(candidato, "STRING")
 
         else:
 
@@ -423,8 +437,8 @@ class Parser:
             Parser.tokens.selectNext()
             return node
 
-        elif Parser.tokens.actual.type == "INT" or Parser.tokens.actual.type == "STRING":
-            node = VarDec(Parser.tokens.actual.type, [])
+        elif Parser.tokens.actual.type == "TYPE":
+            node = VarDec(Parser.tokens.actual.value, [])
             Parser.tokens.selectNext()
 
             while Parser.tokens.actual.type == "IDENTIFIER":
