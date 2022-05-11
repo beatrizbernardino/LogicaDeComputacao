@@ -89,19 +89,23 @@ class BinOp(Node):
                     return (int(c0[0] > c1[0]), c0[1])
                 elif self.value == '<':
                     return (int(c0[0] < c1[0]), c0[1])
+                elif self.value == '.':
+                    return (str(c0[0])+str(c1[0]), "STRING")
 
-            elif(c0[1] == "STRING"):
-
+            elif(c0[1] == "STR"):
                 if self.value == '==':
-                    return (int(c0 == c1), c0[1])
+                    return (int(c0[0] == c1[0]), c0[1])
                 elif self.value == '>':
-                    return (int(c0 > c1), c0[1])
+                    return (int(c0[0] > c1[0]), c0[1])
                 elif self.value == '<':
-                    return (int(c0 < c1), c0[1])
+                    return (int(c0[0] < c1[0]), c0[1])
+                elif self.value == '.':
+                    return (str(c0[0])+str(c1[0]), "STRING")
+
         else:
             if self.value == '.':
 
-                return (c0+c1, "STRING")
+                return (str(c0[0])+str(c1[0]), "STRING")
 
             else:
                 raise ValueError(
@@ -377,11 +381,13 @@ class Tokenizer:
         elif self.origin[self.position] == '"':
 
             self.position += 1
-            candidato = None
+            candidato = ""
 
             while self.origin[self.position] != '"' and self.position < len(self.origin):
                 candidato += self.origin[self.position]
+
                 self.position += 1
+            self.position += 1
 
             self.actual = Token(candidato, "STRING")
 
@@ -460,6 +466,7 @@ class Parser:
 
                 Parser.tokens.selectNext()
                 node = Assignment("=", [node, Parser.parseRelExpression()])
+
                 if Parser.tokens.actual.type == "NO_OP":
                     Parser.tokens.selectNext()
                     return node
@@ -569,7 +576,7 @@ class Parser:
 
         node = Parser.parseTerm()
 
-        while Parser.tokens.actual.type == 'PLUS' or Parser.tokens.actual.type == 'MINUS' or Parser.tokens.actual.type == 'OR':
+        while Parser.tokens.actual.type == 'PLUS' or Parser.tokens.actual.type == 'MINUS' or Parser.tokens.actual.type == 'OR' or Parser.tokens.actual.type == 'CONCAT':
 
             if Parser.tokens.actual.type == 'PLUS':
                 Parser.tokens.selectNext()
