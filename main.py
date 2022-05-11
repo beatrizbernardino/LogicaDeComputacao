@@ -169,7 +169,7 @@ class Scanf(Node):
 
 class While(Node):
     def evaluate(self):
-        while self.children[0].evaluate():
+        while self.children[0].evaluate()[0]:
             self.children[1].evaluate()
 
 
@@ -366,6 +366,8 @@ class Tokenizer:
                     self.actual = Token(candidato, 'IF')
                 elif candidato == "else":
                     self.actual = Token(candidato, 'ELSE')
+                elif candidato == "while":
+                    self.actual = Token(candidato, 'WHILE')
                 elif candidato == "str":
                     self.actual = Token(candidato.upper(), 'TYPE')
                 elif candidato == "int":
@@ -514,7 +516,6 @@ class Parser:
                 raise ValueError('Não fechou Parenteses')
 
         elif Parser.tokens.actual.type == "WHILE":
-            # print(Parser.tokens.actual.type, Parser.tokens.actual.value)
 
             Parser.tokens.selectNext()
 
