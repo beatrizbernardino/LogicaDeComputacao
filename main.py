@@ -28,6 +28,13 @@ class Node:
 class Assembler:
 
     code = ""
+    try:
+        txt = sys.argv[1]
+        txt = txt.replace(".c", ".asm")
+        open(txt, "w").close()
+    
+    except:
+        pass
     with open('header.txt') as f:
         code = f.read()
 
