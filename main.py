@@ -9,13 +9,39 @@ from xml.dom.minidom import Identified
 
 class Node:
 
+    valor = 0
+
     def __init__(self, value, children):
 
         self.value = value
         self.children = children
+        self.id = Node.newId()
+
+    def newId():
+        Node.valor += 1
+        return Node.valor
 
     def evaluate(self):
         pass
+
+
+class Assembler:
+
+    code = ""
+    open('program.asm', 'w').close()
+    with open('header.txt') as f:
+        code = f.read()
+
+    def write(cmd):
+        Assembler.code += cmd + '\n'
+
+    def dump():
+        with open('footer.txt') as f:
+            Assembler.code += f.read()
+
+        file = open("program.asm", "a")
+        file.write(Assembler.code)
+        file.close()
 
 
 class NoOp(Node):
@@ -26,11 +52,13 @@ class NoOp(Node):
 
 class IntVal(Node):
     def evaluate(self):
+        Assembler.write("MOV EBX, {0}".format(self.value))
         return (self.value, "INT")
 
 
 class StrVal(Node):
     def evaluate(self):
+        Assembler.write("MOV EBX, {0}".format(self.value))
         return (self.value, "STR")
 
 
@@ -41,6 +69,7 @@ class VarDec(Node):
         for child in self.children:
 
             SymbolTable.create(child, self.value)
+            Assembler.write("PUSH DWORD 0")
 
 
 class UnOp(Node):
@@ -51,10 +80,14 @@ class UnOp(Node):
         if(c0[1] == "INT"):
 
             if self.value == '+':
+                Assembler.write("MOV EAX, {0}".format(c0))
                 return (c0, "INT")
             elif self.value == '-':
+                Assembler.write("MOV EAX, {0}".format(-c0))
                 return (-c0, "INT")
             elif self.value == "!":
+                Assembler.write("MOV EAX, {0}".format(not c0))
+
                 return (not c0, "INT")
 
         else:
@@ -65,51 +98,79 @@ class BinOp(Node):
     def evaluate(self):
 
         c0 = self.children[0].evaluate()
+        Assembler.write("PUSH EBX")
+
         c1 = self.children[1].evaluate()
+        Assembler.write("POP EAX")
 
-        if(c0[1] == c1[1]):
+        # if(c0[1] == c1[1]):
 
-            if(c0[1] == "INT"):
+        #     if(c0[1] == "INT"):
 
-                if self.value == '+':
-                    return (c0[0]+c1[0], c0[1])
-                elif self.value == '-':
-                    return (c0[0] - c1[0], c0[1])
-                elif self.value == '*':
-                    return (c0[0] * c1[0], c0[1])
-                elif self.value == '/':
-                    return (c0[0] // c1[0], c0[1])
-                elif self.value == '||':
-                    return (int(c0[0] or c1[0]), c0[1])
-                elif self.value == '&&':
-                    return (int(c0[0] and c1[0]), c0[1])
-                elif self.value == '==':
-                    return (int(c0[0] == c1[0]), c0[1])
-                elif self.value == '>':
-                    return (int(c0[0] > c1[0]), c0[1])
-                elif self.value == '<':
-                    return (int(c0[0] < c1[0]), c0[1])
-                elif self.value == '.':
-                    return (str(c0[0])+str(c1[0]), "STRING")
+        if self.value == '+':
+            Assembler.write("ADD EAX, EBX")
+            Assembler.write("MOV EBX, EAX")
 
-            elif(c0[1] == "STR"):
-                if self.value == '==':
-                    return (int(c0[0] == c1[0]), c0[1])
-                elif self.value == '>':
-                    return (int(c0[0] > c1[0]), c0[1])
-                elif self.value == '<':
-                    return (int(c0[0] < c1[0]), c0[1])
-                elif self.value == '.':
-                    return (str(c0[0])+str(c1[0]), "STRING")
+            return (c0[0]+c1[0], "INT")
+        elif self.value == '-':
+            Assembler.write("SUB EAX, EBX")
+            Assembler.write("MOV EBX, EAX")
+
+            return (c0[0] - c1[0], "INT")
+        elif self.value == '*':
+            Assembler.write("IMUL EBX")
+            Assembler.write("MOV EBX, EAX")
+
+            return (c0[0] * c1[0], "INT")
+        elif self.value == '/':
+            Assembler.write("IDIV EBX")
+            Assembler.write("MOV EBX, EAX")
+
+            return (c0[0] // c1[0], "INT")
+        elif self.value == '||':
+            Assembler.write("OR EAX, EBX")
+
+            return (int(c0[0] or c1[0]), "INT")
+        elif self.value == '&&':
+            Assembler.write("AND EAX, EBX")
+
+            return (int(c0[0] and c1[0]), "INT")
+        elif self.value == '==':
+            Assembler.write("CMP EAX, EBX")
+            Assembler.write("CALL binop_je")
+
+            return (int(c0[0] == c1[0]), "INT")
+        elif self.value == '>':
+            Assembler.write("CMP EAX, EBX")
+            Assembler.write("CALL binop_jg")
+
+            return (int(c0[0] > c1[0]), "INT")
+        elif self.value == '<':
+            Assembler.write("CMP EAX, EBX")
+            Assembler.write("CALL binop_jl")
+
+            # return (int(c0[0] < c1[0]), c0[1])
+            # elif self.value == '.':
+            # return (str(c0[0])+str(c1[0]), "STRING")
+
+            # elif(c0[1] == "STR"):
+            #     if self.value == '==':
+            #         return (int(c0[0] == c1[0]), c0[1])
+            #     elif self.value == '>':
+            #         return (int(c0[0] > c1[0]), c0[1])
+            #     elif self.value == '<':
+            #         return (int(c0[0] < c1[0]), c0[1])
+            #     elif self.value == '.':
+            #         return (str(c0[0])+str(c1[0]), "STRING")
+
+        # else:
+        #     if self.value == '.':
+
+        #         return (str(c0[0])+str(c1[0]), "STRING")
 
         else:
-            if self.value == '.':
-
-                return (str(c0[0])+str(c1[0]), "STRING")
-
-            else:
-                raise ValueError(
-                    "operation invalid with type of variable - BinOp")
+            raise ValueError(
+                "operation invalid with type of variable - BinOp")
 
 
 class Block(Node):
@@ -121,6 +182,7 @@ class Block(Node):
 class SymbolTable:
 
     dicionario = {}
+    stack = 0
 
     def getter(chave):
 
@@ -136,7 +198,8 @@ class SymbolTable:
 
             if valor[1] == SymbolTable.dicionario[chave][1]:
 
-                novo_valor = (valor[0], valor[1])
+                novo_valor = (valor[0], valor[1],
+                              SymbolTable.dicionario[chave][2])
 
                 SymbolTable.dicionario[chave] = novo_valor
             else:
@@ -149,20 +212,28 @@ class SymbolTable:
 
         if chave not in dict.keys(SymbolTable.dicionario):
 
-            SymbolTable.dicionario[chave] = (None, tipo)
+            SymbolTable.stack += 4
+            SymbolTable.dicionario[chave] = (None, tipo, SymbolTable.stack)
         else:
             raise ValueError("Key alread created- SB")
 
 
 class Identifier(Node):
     def evaluate(self):
-        return SymbolTable.getter(self.value)
+        stack = SymbolTable.getter(self.value)
+        Assembler.write("MOV EBX, [EBP-{0}]".format(stack[2]))
+        return stack
 
 
 class Printf(Node):
 
     def evaluate(self):
-        print(self.children[0].evaluate()[0])
+        self.children[0].evaluate()
+        Assembler.write("PUSH EBX")
+        Assembler.write("CALL print")
+        Assembler.write("POP EBX")
+
+        # print(self.children[0].evaluate()[0])
 
 
 class Scanf(Node):
@@ -173,22 +244,45 @@ class Scanf(Node):
 
 class While(Node):
     def evaluate(self):
-        while self.children[0].evaluate()[0]:
-            self.children[1].evaluate()
+
+        label_init = "LOOP_{0}:".format(self.id)
+        label_end = "EXIT_{0}:".format(self.id)
+        Assembler.write(label_init)
+        self.children[0].evaluate()
+        Assembler.write("CMP EBX,  False")
+        Assembler.write("JE {0}".format(label_end))
+        self.children[1].evaluate()
+        Assembler.write("JMP {0}".format(label_init))
+        Assembler.write(label_end)
 
 
 class IF(Node):
     def evaluate(self):
-        if self.children[0].evaluate():
-            self.children[1].evaluate()
-        elif len(self.children) > 2:
+
+        self.children[0].evaluate()
+        Assembler.write("CMP EBX,  False")
+        if len(self.children) > 2:
+            Assembler.write("JE LABEL_{0}".format(self.id))
+        else:
+            Assembler.write("JE EXIT_{0}".format(self.id))
+
+        self.children[1].evaluate()
+        Assembler.write("JMP EXIT_{0}".format(self.id))
+
+        if len(self.children) > 2:
+            Assembler.write("LABEL_{0}:".format(self.id))
             self.children[2].evaluate()
+            Assembler.write("JMP EXIT_{0}:".format(self.id))
+
+        Assembler.write("EXIT_{0}:".format(self.id))
 
 
 class Assignment(Node):
     def evaluate(self):
 
         SymbolTable.setter(self.children[0].value, self.children[1].evaluate())
+        stack = SymbolTable.getter(self.children[0].value)[2]
+        Assembler.write("MOV [EBP-{0}], EBX".format(stack))
 
 
 class Token:
@@ -753,3 +847,4 @@ class Parser:
 
 arvore = Parser.run(sys.argv[1])
 arvore.evaluate()
+Assembler.dump()

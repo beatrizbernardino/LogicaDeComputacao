@@ -1,9 +1,15 @@
 {
-  /* All str operations */
-  str a, b;
-  int x_1, y, z;
-  x_1 = 1; y = 1; z = 2;
-  a = "abc";
-  b = "def";
-  printf(a.b);
+  int i;
+  int n;
+  int f;
+  n=5;
+  i=2;
+  f=1;
+
+  while(i<n+1){
+    f=f*i;
+    i=i+1;
+  }
+
+  printf(f);
 }
