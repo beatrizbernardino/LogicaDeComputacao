@@ -28,7 +28,7 @@ class Node:
 class Assembler:
 
     code = ""
-    open('program.asm', 'w').close()
+    open(sys.argv[1].split(".")[0]+".asm", 'w').close()
     with open('header.txt') as f:
         code = f.read()
 
@@ -39,7 +39,7 @@ class Assembler:
         with open('footer.txt') as f:
             Assembler.code += f.read()
 
-        file = open("program.asm", "a")
+        file = open(sys.argv[1].split(".")[0] + ".asm", "a")
         file.write(Assembler.code)
         file.close()
 
