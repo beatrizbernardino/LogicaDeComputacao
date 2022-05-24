@@ -280,7 +280,7 @@ class IF(Node):
         if len(self.children) > 2:
             Assembler.write("LABEL_{0}:".format(self.id))
             self.children[2].evaluate()
-            Assembler.write("JMP EXIT_{0}:".format(self.id))
+            Assembler.write("JMP EXIT_{0}".format(self.id))
 
         Assembler.write("EXIT_{0}:".format(self.id))
 
