@@ -253,15 +253,15 @@ class Scanf(Node):
 class While(Node):
     def evaluate(self):
 
-        label_init = "LOOP_{0}:".format(self.id)
-        label_end = "EXIT_{0}:".format(self.id)
-        Assembler.write(label_init)
+        label_init = "LOOP_{0}".format(self.id)
+        label_end = "EXIT_{0}".format(self.id)
+        Assembler.write(label_init+":")
         self.children[0].evaluate()
         Assembler.write("CMP EBX,  False")
         Assembler.write("JE {0}".format(label_end))
         self.children[1].evaluate()
         Assembler.write("JMP {0}".format(label_init))
-        Assembler.write(label_end)
+        Assembler.write(label_end+":")
 
 
 class IF(Node):
