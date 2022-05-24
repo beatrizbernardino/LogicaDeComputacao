@@ -28,7 +28,7 @@ class Node:
 class Assembler:
 
     code = ""
-    open(sys.argv[1].split(".")[0]+".asm", 'w').close()
+    open(sys.argv[1].split(".")[-2]+".asm", 'w').close()
     with open('header.txt') as f:
         code = f.read()
 
