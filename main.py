@@ -38,7 +38,7 @@ class Assembler:
         with open('footer.txt') as f:
             Assembler.code += f.read()
 
-        file = open(sys.argv[1].split(".")[-2] + ".asm", "a")
+        file = open(sys.argv[1].split(".")[-1] + ".asm", "a")
         file.write(Assembler.code)
         file.close()
 
