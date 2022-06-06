@@ -14,39 +14,74 @@ class Node:
         self.value = value
         self.children = children
 
-    def evaluate(self):
+    def evaluate(self, st):
         pass
 
 
 class NoOp(Node):
 
-    def evaluate(self):
+    def evaluate(self, st):
         pass
 
 
 class IntVal(Node):
-    def evaluate(self):
+    def evaluate(self, st):
         return (self.value, "INT")
 
 
 class StrVal(Node):
-    def evaluate(self):
+    def evaluate(self, st):
         return (self.value, "STR")
+
+
+class Return(Node):
+    def evaluate(self, st):
+
+        return self.children[0].evaluate(st)
 
 
 class VarDec(Node):
 
-    def evaluate(self):
+    def evaluate(self, st):
 
         for child in self.children:
 
-            SymbolTable.create(child, self.value)
+            st.create(child, self.value)
+
+
+class FuncDec(Node):
+
+    def evaluate(self, st):
+
+        FuncTable.create(self.children[0].value, self)
+
+
+class FuncCall(Node):
+
+    def evaluate(self, st):
+        st_ = SymbolTable()
+
+        tipo, nos = FuncTable.getter(self.value)
+
+        chaves = []
+
+        for i in range(1, len(nos.children)-1):
+            nos.children[i].evaluate(st_)
+            nome = nos.children[i].children[0].value
+
+            chaves.append(nome)
+
+        for child in range(0, len(self.children)-1):
+            a = child.evaluate(st)
+            st_.setter(chaves[child], a)
+
+        return nos.children[-1].evaluate(st_)
 
 
 class UnOp(Node):
-    def evaluate(self):
+    def evaluate(self, st):
 
-        c0 = self.children[0].evaluate()
+        c0 = self.children[0].evaluate(st)
 
         if(c0[1] == "INT"):
 
@@ -62,10 +97,10 @@ class UnOp(Node):
 
 
 class BinOp(Node):
-    def evaluate(self):
+    def evaluate(self, st):
 
-        c0 = self.children[0].evaluate()
-        c1 = self.children[1].evaluate()
+        c0 = self.children[0].evaluate(st)
+        c1 = self.children[1].evaluate(st)
 
         if(c0[1] == c1[1]):
 
@@ -113,82 +148,121 @@ class BinOp(Node):
 
 
 class Block(Node):
-    def evaluate(self):
+    def evaluate(self, st):
         for child in self.children:
-            child.evaluate()
+            child.evaluate(st)
 
 
 class SymbolTable:
 
-    dicionario = {}
+    def __init__(self):
 
-    def getter(chave):
+        self.dicionario = {}
 
-        if chave in dict.keys(SymbolTable.dicionario):
+    def getter(self, chave):
 
-            return SymbolTable.dicionario[chave]
+        if chave in dict.keys(self.dicionario):
+
+            return self.dicionario[chave]
         else:
             raise ValueError("Key not in dict")
 
-    def setter(chave, valor):
+    def setter(self, chave, valor):
 
-        if chave in dict.keys(SymbolTable.dicionario):
+        if chave in dict.keys(self.dicionario):
 
-            if valor[1] == SymbolTable.dicionario[chave][1]:
+            if valor[1] == self.dicionario[chave][1]:
 
                 novo_valor = (valor[0], valor[1])
 
-                SymbolTable.dicionario[chave] = novo_valor
+                self.dicionario[chave] = novo_valor
             else:
                 raise ValueError("Wrong type declaration - SymbolTable")
 
         else:
             raise ValueError()
 
+    def create(self, chave, tipo):
+
+        if chave not in dict.keys(self.dicionario):
+
+            self.dicionario[chave] = (None, tipo)
+        else:
+            raise ValueError("Key alread created- SB")
+
+
+class FuncTable:
+
+    dicionario = {}
+
+    def getter(chave):
+
+        if chave in dict.keys(FuncTable.dicionario):
+
+            return FuncTable.dicionario[chave]
+        else:
+            raise ValueError("Key not in dict")
+
+    def setter(chave, valor):
+
+        if chave in dict.keys(FuncTable.dicionario):
+
+            if valor[1] == FuncTable.dicionario[chave][1]:
+
+                novo_valor = (valor[0], valor[1])
+
+                FuncTable.dicionario[chave] = novo_valor
+            else:
+                raise ValueError("Wrong type declaration - FuncTable")
+
+        else:
+            raise ValueError()
+
     def create(chave, tipo):
 
-        if chave not in dict.keys(SymbolTable.dicionario):
+        if chave not in dict.keys(FuncTable.dicionario):
 
-            SymbolTable.dicionario[chave] = (None, tipo)
+            FuncTable.dicionario[chave] = (None, tipo)
         else:
             raise ValueError("Key alread created- SB")
 
 
 class Identifier(Node):
-    def evaluate(self):
-        return SymbolTable.getter(self.value)
+    def evaluate(self, st):
+        return st.getter(self.value)
 
 
 class Printf(Node):
 
-    def evaluate(self):
-        print(self.children[0].evaluate()[0])
+    def evaluate(self, st):
+        print(self.children[0].evaluate(st)[0])
 
 
 class Scanf(Node):
 
-    def evaluate(self):
+    def evaluate(self, st):
         return (int(input()), "INT")
 
 
 class While(Node):
-    def evaluate(self):
-        while self.children[0].evaluate()[0]:
-            self.children[1].evaluate()
+    def evaluate(self, st):
+        while self.children[0].evaluate(st)[0]:
+            self.children[1].evaluate(st)
 
 
 class IF(Node):
-    def evaluate(self):
-        if self.children[0].evaluate():
-            self.children[1].evaluate()
+    def evaluate(self, st):
+        if self.children[0].evaluate(st):
+            self.children[1].evaluate(st)
         elif len(self.children) > 2:
-            self.children[2].evaluate()
+            self.children[2].evaluate(st)
 
 
 class Assignment(Node):
-    def evaluate(self):
+    def evaluate(self, st):
 
-        SymbolTable.setter(self.children[0].value, self.children[1].evaluate())
+        st.setter(
+            self.children[0].value, self.children[1].evaluate(st))
 
 
 class Token:
@@ -206,7 +280,7 @@ class Tokenizer:
         self.position = 0
         self.actual = None
         self.reserved = ["printf", "scanf",
-                         "if", "else", "while", "int", "str"]
+                         "if", "else", "while", "int", "str", "return", "void"]
 
     def selectNext(self):
 
@@ -370,11 +444,15 @@ class Tokenizer:
                     self.actual = Token(candidato, 'IF')
                 elif candidato == "else":
                     self.actual = Token(candidato, 'ELSE')
+                elif candidato == "return":
+                    self.actual = Token(candidato, 'RETURN')
                 elif candidato == "while":
                     self.actual = Token(candidato, 'WHILE')
                 elif candidato == "str":
                     self.actual = Token(candidato.upper(), 'TYPE')
                 elif candidato == "int":
+                    self.actual = Token(candidato.upper(), 'TYPE')
+                elif candidato == "void":
                     self.actual = Token(candidato.upper(), 'TYPE')
                 return self.actual
 
@@ -416,15 +494,75 @@ class Parser:
 
     tokens = None
 
-    def parseBlock():
+    def parseDeclaration():
+
+        node = None
+
+        if Parser.tokens.actual.type == "TYPE":
+
+            node = FuncDec(Parser.tokens.actual.value, [])
+            Parser.tokens.selectNext()
+
+            if Parser.tokens.actual.type == "IDENTIFIER":
+
+                node_iden = VarDec(Parser.tokens.actual.value, [])
+                node.children.append(node_iden)
+                Parser.tokens.selectNext()
+
+                if Parser.tokens.actual.type == "OPEN_PAR":
+                    Parser.tokens.selectNext()
+                    while Parser.tokens.actual.type == "TYPE":
+                        node_var = VarDec(Parser.tokens.actual.value, [])
+                        Parser.tokens.selectNext()
+                        if Parser.tokens.actual.type == "IDENTIFIER":
+                            node_var.children.append(
+                                Parser.tokens.actual.value)
+                            Parser.tokens.selectNext()
+                        if Parser.tokens.actual.type == "COMMA":
+                            node.children.append(node_var)
+                            Parser.tokens.selectNext()
+
+                        else:
+                            node.children.append(node_var)
+                            Parser.tokens.selectNext()
+                    if Parser.tokens.actual.type == "CLOSE_PAR":
+                        Parser.tokens.selectNext()
+
+                        node.children.append(Parser.parseBlock())
+
+                    else:
+
+                        raise ValueError("Parenteses - parseDeclaration")
+
+                else:
+
+                    raise ValueError("Parenteses - parseDeclaration")
+
+            else:
+                raise ValueError("Wrong type - parseDeclaration")
+
+        else:
+            raise ValueError("Wrong Declaration- parseDeclaration")
+
+        return node
+
+    def parseProgram():
 
         node = Block("", [])
 
+        while Parser.tokens.actual.type != "EOF":
+            node.children.append(Parser.parseDeclaration())
+
+        return node
+
+    def parseBlock():
+
+        node = Block("", [])
         if Parser.tokens.actual.type == 'OPEN_BRACKET':
 
             Parser.tokens.selectNext()
-            while Parser.tokens.actual.type != 'CLOSE_BRACKET':
-
+            while Parser.tokens.actual.type != 'CLOSE_BRACKET' and Parser.tokens.actual.type != 'RETURN':
+                # print
                 node.children.append(Parser.parseStatement())
 
             Parser.tokens.selectNext()
@@ -459,6 +597,7 @@ class Parser:
             return node
 
         elif Parser.tokens.actual.type == "IDENTIFIER":
+
             node = Identifier(Parser.tokens.actual.value, [])
             Parser.tokens.selectNext()
 
@@ -469,35 +608,41 @@ class Parser:
 
                 if Parser.tokens.actual.type == "NO_OP":
                     Parser.tokens.selectNext()
+
                     return node
                 else:
                     raise ValueError("Faltou ; - statement")
+
+            elif Parser.tokens.actual.type == 'OPEN_PAR':
+
+                node = FuncCall(Parser.tokens.actual.value, [])
+                Parser.tokens.selectNext()
+                if Parser.tokens.actual.type == 'CLOSE_PAR':
+                    return node
+                else:
+                    while Parser.tokens.actual.type != 'CLOSE_PAR':
+                        node.children.append(Parser.parseRelExpression())
+                        if Parser.tokens.actual.type == 'COMMA':
+                            Parser.tokens.selectNext()
+
+                    return node
 
             else:
                 raise ValueError("Não atribuiu nada a variável - statement")
 
-        elif Parser.tokens.actual.type == "PRINT":
-            # print(Parser.tokens.actual.type, Parser.tokens.actual.value)
+        elif Parser.tokens.actual.type == "RETURN":
 
+            node = Return("", [])
             Parser.tokens.selectNext()
-
-            if Parser.tokens.actual.type == 'OPEN_PAR':
-
-                Parser.tokens.selectNext()
-                # print(Parser.tokens.actual.value)
-
-                node = Printf("", [Parser.parseRelExpression()])
-
-            if Parser.tokens.actual.type == 'CLOSE_PAR':
-                Parser.tokens.selectNext()
-
-                if Parser.tokens.actual.type == "NO_OP":
+            if Parser.tokens.actual.type == "OPEN_PAR":
+                node.children.append(Parser.parseRelExpression())
+                if Parser.tokens.actual.type == "CLOSE_PAR":
                     Parser.tokens.selectNext()
                     return node
                 else:
-                    raise ValueError("Faltou ; - statement")
+                    raise ValueError("Fechar parenteses- return")
             else:
-                raise ValueError('Não fechou Parenteses')
+                raise ValueError("Abrir parenteses- return")
 
         elif Parser.tokens.actual.type == "PRINT":
             # print(Parser.tokens.actual.type, Parser.tokens.actual.value)
@@ -507,9 +652,8 @@ class Parser:
             if Parser.tokens.actual.type == 'OPEN_PAR':
 
                 Parser.tokens.selectNext()
-                # print(Parser.tokens.actual.value)
-
                 node = Printf("", [Parser.parseRelExpression()])
+                # Parser.tokens.selectNext()
 
             if Parser.tokens.actual.type == 'CLOSE_PAR':
                 Parser.tokens.selectNext()
@@ -628,7 +772,6 @@ class Parser:
     def parseFactor():
 
         if Parser.tokens.actual.type == 'INT':
-
             # resultado = Parser.tokens.actual.value
             node = IntVal(Parser.tokens.actual.value, [])
             Parser.tokens.selectNext()
@@ -643,11 +786,27 @@ class Parser:
 
         elif Parser.tokens.actual.type == 'IDENTIFIER':
 
-            # resultado = Parser.tokens.actual.value
+            node = None
+            value = Parser.tokens.actual.value
+            # Parser.tokens.selectNext()
 
-            node = Identifier(Parser.tokens.actual.value, [])
-            Parser.tokens.selectNext()
-            return node
+            if Parser.tokens.actual.type == 'OPEN_PAR':
+                node = FuncCall(value, [])
+                Parser.tokens.selectNext()
+                if Parser.tokens.actual.type == 'CLOSE_PAR':
+                    return node
+                else:
+                    while Parser.tokens.actual.type != 'CLOSE_PAR':
+                        node.children.append(Parser.parseRelExpression())
+                        if Parser.tokens.actual.type == 'COMMA':
+                            Parser.tokens.selectNext()
+
+                    return node
+
+            else:
+                node = Identifier(value, [])
+                Parser.tokens.selectNext()
+                return node
 
         elif Parser.tokens.actual.type == 'PLUS':
 
@@ -743,7 +902,7 @@ class Parser:
         Parser.tokens = Tokenizer(PrePro.code)
         Parser.tokens.selectNext()
 
-        node = Parser.parseBlock()
+        node = Parser.parseProgram()
 
         if Parser.tokens.actual.type == 'EOF':
             return node
@@ -752,4 +911,7 @@ class Parser:
 
 
 arvore = Parser.run(sys.argv[1])
-arvore.evaluate()
+st = SymbolTable()
+node = FuncCall("main", [])
+arvore.children.append(node)
+arvore.evaluate(st)
