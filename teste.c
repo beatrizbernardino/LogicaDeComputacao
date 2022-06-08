@@ -1,10 +1,16 @@
-void main(){
-  /* All str operations */
+int soma( int x, int y){
+  int a;
+  a=x+y;
+  return(a);
+}
 
-  int x_1;
+int main(){
 
-  x_1=1;
-  Printf(x_1);
+  int a;
+  int b;
+  a=3;
+  b=soma(a,2);
+  printf(b);
 
- 
+
 }

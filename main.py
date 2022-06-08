@@ -61,19 +61,20 @@ class FuncCall(Node):
     def evaluate(self, st):
         st_ = SymbolTable()
 
-        tipo, nos = FuncTable.getter(self.value)
+        nos = FuncTable.getter(self.value)
 
         chaves = []
-
+        # print(self.children)
         for i in range(1, len(nos.children)-1):
             nos.children[i].evaluate(st_)
-            nome = nos.children[i].children[0].value
+            nome = nos.children[i].children[0]
 
             chaves.append(nome)
 
-        for child in range(0, len(self.children)-1):
-            a = child.evaluate(st)
-            st_.setter(chaves[child], a)
+        for child in range(1, len(chaves)+1):
+            # print(chaves[child])
+            a = self.children[child].evaluate(st)
+            st_.setter(chaves[child-1], a)
 
         return nos.children[-1].evaluate(st_)
 
@@ -150,6 +151,8 @@ class BinOp(Node):
 class Block(Node):
     def evaluate(self, st):
         for child in self.children:
+            if child.value == "return":
+                return child.evaluate(st)
             child.evaluate(st)
 
 
@@ -170,6 +173,8 @@ class SymbolTable:
     def setter(self, chave, valor):
 
         if chave in dict.keys(self.dicionario):
+
+            # print("aaa", chave, valor)
 
             if valor[1] == self.dicionario[chave][1]:
 
@@ -203,26 +208,27 @@ class FuncTable:
         else:
             raise ValueError("Key not in dict")
 
-    def setter(chave, valor):
+    # def setter(chave, valor):
 
-        if chave in dict.keys(FuncTable.dicionario):
+    #     if chave in dict.keys(FuncTable.dicionario):
 
-            if valor[1] == FuncTable.dicionario[chave][1]:
+    #         if valor[1] == FuncTable.dicionario[chave][1]:
 
-                novo_valor = (valor[0], valor[1])
+    #             novo_valor = (valor[0], valor[1])
 
-                FuncTable.dicionario[chave] = novo_valor
-            else:
-                raise ValueError("Wrong type declaration - FuncTable")
+    #             FuncTable.dicionario[chave] = novo_valor
+    #         else:
+    #             raise ValueError("Wrong type declaration - FuncTable")
 
-        else:
-            raise ValueError()
+    #     else:
+    #         raise ValueError()
 
     def create(chave, tipo):
 
         if chave not in dict.keys(FuncTable.dicionario):
 
-            FuncTable.dicionario[chave] = (None, tipo)
+            FuncTable.dicionario[chave] = tipo
+
         else:
             raise ValueError("Key alread created- SB")
 
@@ -518,13 +524,14 @@ class Parser:
                             node_var.children.append(
                                 Parser.tokens.actual.value)
                             Parser.tokens.selectNext()
+
                         if Parser.tokens.actual.type == "COMMA":
                             node.children.append(node_var)
                             Parser.tokens.selectNext()
 
                         else:
                             node.children.append(node_var)
-                            Parser.tokens.selectNext()
+
                     if Parser.tokens.actual.type == "CLOSE_PAR":
                         Parser.tokens.selectNext()
 
@@ -561,7 +568,7 @@ class Parser:
         if Parser.tokens.actual.type == 'OPEN_BRACKET':
 
             Parser.tokens.selectNext()
-            while Parser.tokens.actual.type != 'CLOSE_BRACKET' and Parser.tokens.actual.type != 'RETURN':
+            while Parser.tokens.actual.type != 'CLOSE_BRACKET':
                 # print
                 node.children.append(Parser.parseStatement())
 
@@ -632,9 +639,10 @@ class Parser:
 
         elif Parser.tokens.actual.type == "RETURN":
 
-            node = Return("", [])
+            node = Return(Parser.tokens.actual.value, [])
             Parser.tokens.selectNext()
             if Parser.tokens.actual.type == "OPEN_PAR":
+                Parser.tokens.selectNext()
                 node.children.append(Parser.parseRelExpression())
                 if Parser.tokens.actual.type == "CLOSE_PAR":
                     Parser.tokens.selectNext()
@@ -786,12 +794,14 @@ class Parser:
 
         elif Parser.tokens.actual.type == 'IDENTIFIER':
 
-            node = None
             value = Parser.tokens.actual.value
+            node_iden = Identifier(value, [])
+            Parser.tokens.selectNext()
             # Parser.tokens.selectNext()
 
             if Parser.tokens.actual.type == 'OPEN_PAR':
                 node = FuncCall(value, [])
+                node.children.append(node_iden)
                 Parser.tokens.selectNext()
                 if Parser.tokens.actual.type == 'CLOSE_PAR':
                     return node
@@ -800,13 +810,11 @@ class Parser:
                         node.children.append(Parser.parseRelExpression())
                         if Parser.tokens.actual.type == 'COMMA':
                             Parser.tokens.selectNext()
+                    Parser.tokens.selectNext()
 
                     return node
 
-            else:
-                node = Identifier(value, [])
-                Parser.tokens.selectNext()
-                return node
+            return node_iden
 
         elif Parser.tokens.actual.type == 'PLUS':
 
